@@ -1,0 +1,262 @@
+﻿<Window x:Class="MEW_GUI_V3._1.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ports="clr-namespace:System.IO.Ports;assembly=System"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+        xmlns:local="clr-namespace:MEW_GUI_V3._1"
+        mc:Ignorable="d"
+       Title="MEW GUI" Height="{DynamicResource {x:Static SystemParameters.MaximizedPrimaryScreenHeightKey}}" Width="{DynamicResource {x:Static SystemParameters.MaximizedPrimaryScreenWidthKey}}" ResizeMode="CanResizeWithGrip" WindowStartupLocation="CenterScreen" WindowState="Maximized" IsEnabled="True" SizeToContent="WidthAndHeight">
+
+    <Window.Resources>
+        <ObjectDataProvider ObjectType="{x:Type ports:SerialPort}" MethodName="GetPortNames" x:Key="portNames" />
+    </Window.Resources>
+    <!--Gets Serial ports required for connection to printer.-->
+
+    <TabControl HorizontalAlignment="Left" Height="828" VerticalAlignment="Top" Width="1540" Margin="0,0,0,-19.2">
+        <TabItem x:Name="Printer_Control" Width="120" Height="40" Margin="30,0,-30,-2.2" Padding="6,2" Header="Printer Control" ToolTip="Control Printer and define necessary starting conditions.">
+            <Grid x:Name="PrinterControlGrid" Background="#FFE5E5E5" Margin="10,0,10,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="500"/>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+
+                <!--Connect to Ardunio & Control Box & Printer-->
+                <Label x:Name="PortConnectionsLabel" Content="Serial Port Connections" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,50,0,0" Grid.Column="1" Width="150" Height="30" VerticalContentAlignment="Center" FontWeight="Bold"/>
+                <ComboBox x:Name="PortConnectionsCombo" Grid.Column="2" HorizontalAlignment="Left" Margin="0,50,0,0" VerticalAlignment="Top" Width="200" Height="30"  Background="White" VerticalContentAlignment="Center" ItemsSource="{Binding Source={StaticResource portNames}}" SelectionChanged="ConnectionsCombo_SelectionChanged"/>
+                <Button x:Name="ConnectPort" Content="Connect" Grid.Column="2" HorizontalAlignment="Left" Margin="0,80,0,0" VerticalAlignment="Top" Width="95" Height="30" FontWeight="Bold" Background="#FFBBD3F1" Click="ConnectPort_Click"/>
+                <Button x:Name="RefreshPorts" Content="Refresh" Grid.Column="2" HorizontalAlignment="Left" Margin="105,80,0,0" VerticalAlignment="Top" Width="95" Height="30" FontWeight="Bold" Click="RefreshPorts_Click"/>
+                <!--Defines Print surface in use during print operation. Should automatically change which pins & servos are used to control motion.-->
+                <Label x:Name="PrintSurfaceLabel" Content="Specify Print Surface" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,150,0,0" Grid.Column="1" Width="150" Height="30" VerticalContentAlignment="Center" FontWeight="Bold"/>
+                <ComboBox x:Name="PrintSurfaceCombo" Grid.Column="2" HorizontalAlignment="Left" Margin="0,150,0,0" VerticalAlignment="Top" Width="200" Height="30"  Background="White" VerticalContentAlignment="Center">
+                    <ComboBoxItem x:Name="Flat_Baseplate" Content="Flat Baseplate" Background="White" VerticalContentAlignment="Center"/>
+                    <ComboBoxItem x:Name="Rotating_Mandril" Content="Rotating Mandril" Background="White" VerticalContentAlignment="Center"/>
+                    <!--When changed, change Pins/ports controlling relevant servos for z-axis control.-->
+                </ComboBox>
+
+                <!--Defines working distance in use during print operation. User controlled parameter that remains constant throughout procedure. Possibility for automation in the future.-->
+                <Label x:Name="WorkingDistanceLabel" Content="Working Distance" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,200,0,0" Grid.Column="1" Width="150" Height="30" VerticalContentAlignment="Center" FontWeight="Bold"/>
+                <TextBox x:Name="WorkingDistanceValue" HorizontalAlignment="Left" Margin="0,200,0,0" TextWrapping="Wrap" Text="Enter a Value" VerticalAlignment="Top" Width="200" Height="30" VerticalContentAlignment="Center" Grid.Column="2" PreviewTextInput="NumericOnly"/>
+
+                <!--Controls for loading and previewing GCode-->
+                <Label x:Name="LoadGCodeLabel" Content="Load a G-Code Template" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,300,0,0" Width="200" Height="30" VerticalContentAlignment="Center" Grid.Column="1"  FontWeight="Bold"/>
+                <TextBox x:Name="FileNameText" Grid.Column="2" Height="30" Margin="0,300,0,0" TextWrapping="NoWrap" Text="File Name" VerticalAlignment="Top" VerticalContentAlignment="Center" Grid.ColumnSpan="2" HorizontalAlignment="Left" Width="200" IsReadOnly="True"/>
+                <Button x:Name="LoadGCodeButton" Content="Load" Grid.Column="2" HorizontalAlignment="Left" Margin="0,330,0,0" VerticalAlignment="Top" Width="95" Height="30" FontWeight="Bold" Background="#FFBBD3F1" Grid.ColumnSpan="2" Click="LoadGCodeButton_Click"/>
+                <Button x:Name="OpenGCodeButton" Content="Open GCode" Grid.Column="2" HorizontalAlignment="Left" Margin="105,330,0,0" VerticalAlignment="Top" Width="95" Height="30" FontWeight="Bold" Grid.ColumnSpan="1" Click="OpenGCodeButton_Click"/>
+
+                <lvc:CartesianChart x:Name="GCodePlot" Grid.Column="4" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="25,50,25,0" Height="400" Background="White" Series="{Binding ChartValues}"/>
+
+                <Grid x:Name="PositionGrid" Grid.Column="6" Margin="25,50,25,0" Grid.ColumnSpan="2" Height="200" Background="#FFC8D4E4" VerticalAlignment="Top">
+                    <Label Content ="X:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="25,25,0,0" Height="30" Width="30"  VerticalContentAlignment="Center" FontSize="18" FontWeight="Bold" />
+                    <TextBox x:Name="AxisXPosition" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="60,25,60,0" Height="30" VerticalContentAlignment="Center" FontSize="18" FontWeight="Bold" IsEnabled="False" Text=""/>
+                    <Button x:Name="ZeroXPosition" Content="Zero" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,25,25,0" Height="30" Width="30" Click="ZeroPosition_Click"/>
+
+                    <Label Content ="Y:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="25,60,0,0" Height="30" Width="30"  VerticalContentAlignment="Center" FontSize="18" FontWeight="Bold" />
+                    <TextBox x:Name="AxisYPosition" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="60,60,60,0" Height="30" VerticalContentAlignment="Center" FontSize="18" FontWeight="Bold" IsEnabled="False"/>
+                    <Button x:Name="ZeroYPosition" Content="Zero" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,60,25,0" Height="30" Width="30" Click="ZeroPosition_Click"/>
+
+                    <Label Content ="Z:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="25,95,0,0" Height="30" Width="30"  VerticalContentAlignment="Center" FontSize="18" FontWeight="Bold" />
+                    <TextBox x:Name="AxisZPosition" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="60,95,60,0" Height="30" VerticalContentAlignment="Center" FontSize="18" FontWeight="Bold" IsEnabled="False"/>
+                    <Button x:Name="ZeroZPosition" Content="Zero" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,95,25,0" Height="30" Width="30" Click="ZeroPosition_Click"/>
+
+
+                    <Label Content ="R:" HorizontalAlignment="Left" Margin="25,145,0,0" Width="30"  VerticalContentAlignment="Center" FontSize="18" FontWeight="Bold" Height="30" VerticalAlignment="Top" />
+                    <TextBox x:Name="AxisRPosition" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="60,145,60,0" Height="30" VerticalContentAlignment="Center" FontSize="18" FontWeight="Bold" IsEnabled="False"/>
+                    <Button x:Name="ZeroRPosition" Content="Zero" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,145,25,0" Height="30" Width="30" Click="ZeroPosition_Click"/>
+
+
+                </Grid>
+
+                <Grid x:Name="NudgeGrid" Grid.Column="6" Margin="25,280,25,0" Grid.ColumnSpan="2" Background="#FFC8D4E4" Height="150" VerticalAlignment="Top">
+                    <Label Content="X/Y" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" Grid.Column="1" FontWeight="Bold"/>
+                    <Button x:Name="HomeXY" Content="🏠" Margin="55,55,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Height="40" Width="40" Click="Home_Click"/>
+                    <Button x:Name="NudgeXUp" Content="▶" Margin="100,55,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Height="40" Width="40" Click="Nudge_Click"/>
+                    <Button x:Name="NudgeXDown" Content="◀" Margin="10,55,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Height="40" Width="40" Click="Nudge_Click"/>
+                    <Button x:Name="NudgeYUp" Content="▲" Margin="55,10,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Height="40" Width="40" Click="Nudge_Click"/>
+                    <Button x:Name="NudgeYDown" Content="▼" Margin="55,100,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Height="40" Width="40" Click="Nudge_Click"/>
+                    <!--Defines the nudge distance. To be used in all nudging operations-->
+                    <ToggleButton x:Name="Nudge100mm"  Content="100mm" Margin="160,90,72,40" Checked="HandleCheck"/>
+                    <ToggleButton x:Name="Nudge10mm" Content="10mm" Margin="160,65,72,65" Checked="HandleCheck"/>
+                    <ToggleButton x:Name="Nudge1mm" Content="1mm" Margin="160,40,72,90" Checked="HandleCheck"/>
+
+                    <Label Content="Z" HorizontalAlignment="Right" Margin="0,0,55,0" VerticalAlignment="Top" FontWeight="Bold"/>
+                    <Button x:Name="HomeZ" Content="🏠" Margin="0,55,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Height="40" Width="40" Click="Home_Click"/>
+                    <Button x:Name="NudgeZUp" Content="▲" Margin="0,10,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Height="40" Width="40" Click="Nudge_Click"/>
+                    <Button x:Name="NudgeZDown" Content="▼" Margin="0,100,10,0" VerticalAlignment="Top" HorizontalAlignment="Right" Height="40" Width="40" Click="Nudge_Click"/>
+                </Grid>
+
+                <Button x:Name="ModifyAxesButton" Content="Modify Axes" HorizontalAlignment="Left" Margin="50,550,0,0" VerticalAlignment="Top" Width="190" Height="30" Grid.ColumnSpan="2"/>
+
+                <!--Calibration control-->
+                <Button x:Name="CalibratePrintHeadButton" Content="Calibrate Print Head" Grid.Column="2" HorizontalAlignment="Left" Margin="0.6,550,0,0" VerticalAlignment="Top" Width="190" Height="30"/>
+                <!--START/PAUSE/STOP buttons for user control.-->
+                <Button x:Name="StartPrintButton" Content="START PRINT" HorizontalAlignment="Left" Margin="50,600,0,0" VerticalAlignment="Top" Width="190" Height="50" FontWeight="Bold" Background="#FF9ED688" Grid.ColumnSpan="2" Click="StartPrintButton_Click"/>
+                <Button x:Name="PausePrintButton" Content="PAUSE PRINT" Grid.Column="2" HorizontalAlignment="Left" Margin="0.6,600,0,0" VerticalAlignment="Top" Width="190" Height="50" FontWeight="Bold" Background="#FFA7C8F7"/>
+                <Button x:Name="StopPrintButton" Content="STOP PRINT" HorizontalAlignment="Left" Margin="50,670,0,0" VerticalAlignment="Top" Width="392" Height="50" FontWeight="Bold" Background="#FFF79F9F" Grid.ColumnSpan="3" Click="StopPrintButton_Click"/>
+
+
+                <TextBox x:Name="TestingTextbox" Grid.Column="4" HorizontalAlignment="Stretch" Height="150" Margin="25,500,25,0" TextWrapping="Wrap" VerticalAlignment="Top"/>
+                <Button x:Name="TestingButton" Content="TESTING" Grid.Column="6" HorizontalAlignment="Left" Margin="25.4,485,0,0" VerticalAlignment="Top" Width="155" Height="69" Click="TestingButton_Click"/>
+
+
+            </Grid>
+        </TabItem>
+        <!--<TabItem x:Name="G_Code_Generator" Width="120" Height="40" Margin="30,0,-30,-2.2" Padding="6,2" Header="G-Code Generator" ToolTip="Load or generate G-Code for manufacture.">
+            <Grid x:Name="GCodeGeneratorGrid" Background="#FFE5E5E5" Margin="10,0,10,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="695"/>
+                    <ColumnDefinition Width="100"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="50"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+
+                <Button x:Name="StartGenerationButton" Content="Start G-Code Generation" Grid.Column="1" Margin="1,350,0,0" VerticalAlignment="Top" Height="30" FontWeight="Bold" Background="#FFBBD3F1" Grid.Row="1" HorizontalAlignment="Left" Width="390" Grid.ColumnSpan="2"/>
+                <Button x:Name="RestartButton" Content="Restart" Grid.Column="4" HorizontalAlignment="Left" Margin="1,350,0,0" VerticalAlignment="Top" Width="190" Height="30" FontWeight="Bold" Background="#FFBBD3F1" Grid.Row="1"/>
+
+                <DataGrid Grid.Column="5" HorizontalAlignment="Left" Height="502" VerticalAlignment="Top" Width="695" Grid.Row="1" Grid.ColumnSpan="2" Margin="49,0.4,0,0"/>
+
+                <Button x:Name="LoadCustomGCodeButton" Content="LOAD" Grid.Column="4" HorizontalAlignment="Left" Margin="1,0,0,0" VerticalAlignment="Top" Width="190" Height="30" FontWeight="Bold" Background="#FFBBD3F1" Grid.Row="1"/>
+                <Label x:Name="LoadCustomGCodeLabel" Content="Load a Custom G-Code Template" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,0,0,0" Width="200" Height="30" VerticalContentAlignment="Center" Grid.Row="1" Grid.ColumnSpan="2" Grid.Column="1"/>
+                <TextBox x:Name="FileNameLabel" Grid.Column="2" Height="30" Margin="0.6,0.4,0,0" TextWrapping="NoWrap" Text="File Name" VerticalAlignment="Top" VerticalContentAlignment="Center" Grid.Row="1" Grid.ColumnSpan="2" IsEnabled="False" HorizontalAlignment="Left" Width="200"/>
+            </Grid>
+        </TabItem>-->
+        <TabItem x:Name="Parameter_Control" Width="120" Height="40" Margin="30,0,-30,-2.2" Padding="6,2" Header="Parameter Control" ToolTip="Control and monitor critical parameters in the manufacture process">
+            <Grid x:Name="ParameterControlGrid" Background="#FFE5E5E5" Margin="10,0,10,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="350"/>
+                    <ColumnDefinition Width="350"/>
+                </Grid.ColumnDefinitions>
+                <!--Labels for corresponding fields in each parameter.-->
+                <Label x:Name="EditParameterLabel" Content="Edit Value" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="1,20,0,0" Grid.Column="2" Width="150" Height="30" VerticalContentAlignment="Center"/>
+                <Label x:Name="TargetParameterLabel" Content="Target Value" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="1,20,0,0" Grid.Column="3" Width="90" Height="30" VerticalContentAlignment="Center"/>
+                <Label x:Name="CurrentParameterLabel" Content="Current Value" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="101,20,0,0" Grid.Column="3" Width="90" Height="30" VerticalContentAlignment="Center"/>
+
+                <!--Representation of all values associated with each parameter. (Pressure, Voltage, Temperatures 1,2,3)-->
+                <Label x:Name="PressureLabel" Content="Pressure" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="1,50,0,0" Grid.Column="1" Width="150" Height="30" VerticalContentAlignment="Center" FontWeight="Bold"/>
+                <TextBox x:Name="EditPressureValue" Grid.Column="2" HorizontalAlignment="Left" Height="30" Margin="1,50,0,0" TextWrapping="NoWrap" Text="Enter a Value" VerticalAlignment="Top" Width="140" VerticalContentAlignment="Center" PreviewTextInput="NumericOnly"/>
+                <Button x:Name="ApplyPressureValue" Content="Apply" Grid.Column="2" HorizontalAlignment="Left" Margin="140,50,0,0" VerticalAlignment="Top" Width="40" Height="30" Click="ApplyPressureValue_Click"/>
+                <TextBox x:Name="TargetPressure" Grid.Column="3" HorizontalAlignment="Left" Height="30" Margin="1,50,0,0" TextWrapping="NoWrap" Text="Target Value" VerticalAlignment="Top" Width="90" VerticalContentAlignment="Center" IsEnabled="False"/>
+                <TextBox x:Name="CurrentPressure" Grid.Column="3" HorizontalAlignment="Left" Height="30" Margin="101,50,0,0" TextWrapping="NoWrap" Text="Current Value" VerticalAlignment="Top" Width="90" VerticalContentAlignment="Center" IsEnabled="False"/>
+                <!--Copy for all other parameters-->
+                <Label x:Name="VoltageLabel" Content="Voltage" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="1,100,0,0" Grid.Column="1" Width="150" Height="30" VerticalContentAlignment="Center" FontWeight="Bold"/>
+                <TextBox x:Name="EditVoltageValue" Grid.Column="2" HorizontalAlignment="Left" Height="30" Margin="1,100,0,0" TextWrapping="NoWrap" Text="Enter a Value" VerticalAlignment="Top" Width="140" VerticalContentAlignment="Center" PreviewTextInput="NumericOnly"/>
+                <Button x:Name="ApplyVoltageValue" Content="Apply" Grid.Column="2" HorizontalAlignment="Left" Margin="140,100,0,0" VerticalAlignment="Top" Width="40" Height="30"/>
+                <TextBox x:Name="TargetVoltage" Grid.Column="3" HorizontalAlignment="Left" Height="30" Margin="1,100,0,0" TextWrapping="NoWrap" Text="Target Value" VerticalAlignment="Top" Width="90" VerticalContentAlignment="Center" IsEnabled="False"/>
+                <TextBox x:Name="CurrentVoltage" Grid.Column="3" HorizontalAlignment="Left" Height="30" Margin="101,100,0,0" TextWrapping="NoWrap" Text="Current Value" VerticalAlignment="Top" Width="90" VerticalContentAlignment="Center" IsEnabled="False"/>
+
+                <Label x:Name="Temp1Label" Content="Temperature 1" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="1,200,0,0" Grid.Column="1" Width="150" Height="30" VerticalContentAlignment="Center" FontWeight="Bold"/>
+                <TextBox x:Name="EditTemp1Value" Grid.Column="2" HorizontalAlignment="Left" Height="30" Margin="1,200,0,0" TextWrapping="NoWrap" Text="Enter a Value" VerticalAlignment="Top" Width="140" VerticalContentAlignment="Center" PreviewTextInput="NumericOnly"/>
+                <Button x:Name="ApplyTemp1Value" Content="Apply" Grid.Column="2" HorizontalAlignment="Left" Margin="140,200,0,0" VerticalAlignment="Top" Width="40" Height="30"/>
+                <TextBox x:Name="TargetTemp1" Grid.Column="3" HorizontalAlignment="Left" Height="30" Margin="1,200,0,0" TextWrapping="NoWrap" Text="Target Value" VerticalAlignment="Top" Width="90" VerticalContentAlignment="Center" IsEnabled="False"/>
+                <TextBox x:Name="CurrentTemp1" Grid.Column="3" HorizontalAlignment="Left" Height="30" Margin="101,200,0,0" TextWrapping="NoWrap" Text="Current Value" VerticalAlignment="Top" Width="90" VerticalContentAlignment="Center" IsEnabled="False"/>
+
+                <Label x:Name="Temp2Label" Content="Temperature 2" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="1,250,0,0" Grid.Column="1" Width="150" Height="30" VerticalContentAlignment="Center" FontWeight="Bold"/>
+                <TextBox x:Name="EditTemp2Value" Grid.Column="2" HorizontalAlignment="Left" Height="30" Margin="1,250,0,0" TextWrapping="NoWrap" Text="Enter a Value" VerticalAlignment="Top" Width="140" VerticalContentAlignment="Center" PreviewTextInput="NumericOnly"/>
+                <Button x:Name="ApplyTemp2Value" Content="Apply" Grid.Column="2" HorizontalAlignment="Left" Margin="140,250,0,0" VerticalAlignment="Top" Width="40" Height="30"/>
+                <TextBox x:Name="TargetTemp2" Grid.Column="3" HorizontalAlignment="Left" Height="30" Margin="1,250,0,0" TextWrapping="NoWrap" Text="Target Value" VerticalAlignment="Top" Width="90" VerticalContentAlignment="Center" IsEnabled="False"/>
+                <TextBox x:Name="CurrentTemp2" Grid.Column="3" HorizontalAlignment="Left" Height="30" Margin="101,250,0,0" TextWrapping="NoWrap" Text="Current Value" VerticalAlignment="Top" Width="90" VerticalContentAlignment="Center" IsEnabled="False"/>
+
+                <Label x:Name="Temp3Label" Content="Temperature 3" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="1,300,0,0" Grid.Column="1" Width="150" Height="30" VerticalContentAlignment="Center" FontWeight="Bold"/>
+                <TextBox x:Name="EditTemp3Value" Grid.Column="2" HorizontalAlignment="Left" Height="30" Margin="1,300,0,0" TextWrapping="NoWrap" Text="Enter a Value" VerticalAlignment="Top" Width="140" VerticalContentAlignment="Center" PreviewTextInput="NumericOnly"/>
+                <Button x:Name="ApplyTemp3Value" Content="Apply" Grid.Column="2" HorizontalAlignment="Left" Margin="140,300,0,0" VerticalAlignment="Top" Width="40" Height="30"/>
+                <TextBox x:Name="TargetTemp3" Grid.Column="3" HorizontalAlignment="Left" Height="30" Margin="1,300,0,0" TextWrapping="NoWrap" Text="Target Value" VerticalAlignment="Top" Width="90" VerticalContentAlignment="Center" IsEnabled="False"/>
+                <TextBox x:Name="CurrentTemp3" Grid.Column="3" HorizontalAlignment="Left" Height="30" Margin="101,300,0,0" TextWrapping="NoWrap" Text="Current Value" VerticalAlignment="Top" Width="90" VerticalContentAlignment="Center" IsEnabled="False"/>
+
+                <!--Temperature Alarm Levels?-->
+
+                <!--GRAPHS OF VARIABLE PARAMETERS OVER TIME-->
+                <lvc:CartesianChart x:Name="PressurePlot" Grid.Column="5" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="1,50,0,0" Height="200" Width="300" Background="White" Series="{Binding ChartValues}"/>
+                <lvc:CartesianChart x:Name="Temperature1Plot" Grid.Column="6" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="1,50,0,0" Height="200" Width="300" Background="White" Series="{Binding ChartValues}" Grid.ColumnSpan="2"/>
+                <lvc:CartesianChart x:Name="Temperature2Plot" Grid.Column="6" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="1,275,0,0" Height="200" Width="300" Background="White" Series="{Binding ChartValues}" Grid.ColumnSpan="2"/>
+                <lvc:CartesianChart x:Name="Temperature3Plot" Grid.Column="6" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="1,500,0,0" Height="200" Width="300" Background="White" Series="{Binding ChartValues}" Grid.ColumnSpan="2"/>
+                <lvc:CartesianChart x:Name="VoltagePlot" Grid.Column="5" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="1,275,0,0" Height="200" Width="300" Background="White" Series="{Binding ChartValues}" Grid.ColumnSpan="2"/>
+
+
+            </Grid>
+        </TabItem>
+        <TabItem x:Name="Camera_Control" Width="120" Height="40" Margin="30,0,-30,-2.2" Padding="6,2" Header="Camera Control" ToolTip="Support for camera feed. Specify camera source and monitor manufacture process.">
+            <Grid x:Name="CameraControlGrid" Background="#FFE5E5E5" Margin="10,0,10,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="1072"/>
+                </Grid.ColumnDefinitions>
+
+                <Label x:Name="SelectCamera1Label" Content="Select Camera 1 Source" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="1,50,0,0" Grid.Column="1" Width="150" Height="30" VerticalContentAlignment="Center" FontWeight="Bold"/>
+                <ComboBox x:Name="SelectCamera1Combo" Grid.Column="2" HorizontalAlignment="Left" Margin="1,50,0,0" VerticalAlignment="Top" Width="190" Height="30"  Background="White">
+                    <!--Automatically detect & show available camera devices.-->
+                </ComboBox>
+                <!--Copy for all other camera displays in GUI.-->
+
+                <!--Displays for camera sources selected above-->
+            </Grid>
+        </TabItem>
+        <TabItem x:Name="Terminal" Width="120" Height="40" Margin="30,0,-30,-2.2" Padding="6,2" Header="Terminal">
+            <Grid x:Name="TerminalGrid" Background="#FFE5E5E5" Margin="10,0,10,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="500"/>
+                    <ColumnDefinition/>
+
+                </Grid.ColumnDefinitions>
+                <RichTextBox x:Name="OutputText"
+                             Margin="50,50,0,400"
+                             VerticalScrollBarVisibility="Visible"
+                             HorizontalScrollBarVisibility="Auto"
+                             IsReadOnly="True"
+                             VerticalContentAlignment="Top">
+                </RichTextBox>
+
+                <RichTextBox x:Name="PortData"
+                             Margin="50,400,0,50"
+                             VerticalScrollBarVisibility="Visible"
+                             HorizontalScrollBarVisibility="Auto"
+                             IsReadOnly="True"
+                             VerticalContentAlignment="Top">
+                </RichTextBox>
+
+                <RichTextBox x:Name="GCodeProgress"
+                    Margin="50,50,500,200"
+                    VerticalScrollBarVisibility="Visible"
+                    HorizontalScrollBarVisibility="Auto"
+                    IsReadOnly="True"
+                    VerticalContentAlignment="Top" Grid.Column="1">
+                </RichTextBox>
+
+                <RichTextBox x:Name="MDI"
+                    Margin="50,600,500,50"
+                    VerticalScrollBarVisibility="Visible"
+                    HorizontalScrollBarVisibility="Auto"
+                    IsReadOnly="True"
+                    VerticalContentAlignment="Top" Grid.Column="1">
+                </RichTextBox>
+
+
+                <!--TextBox for Outputting GCode Commands, and tracking overall print progress. Refer to "Universal GCode Sender" github.-->
+
+            </Grid>
+        </TabItem>
+    </TabControl>
+</Window>
